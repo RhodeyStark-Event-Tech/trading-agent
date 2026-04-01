@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { HarvestConfigSchema } from '../lib/schemas.js';
+import { HarvestConfigSchema, UUIDSchema, AchReferenceSchema } from '../lib/schemas.js';
 import { evaluateHarvest, getRealizedPnLSinceLastHarvest } from '../services/harvestService.js';
 
 export const harvestRouter = Router();
@@ -75,16 +75,26 @@ harvestRouter.get('/withdrawals', asyncHandler(async (_req, res) => {
 
 // POST /api/harvest/confirm/:id — manually confirm withdrawal completed
 harvestRouter.post('/confirm/:id', asyncHandler(async (req, res) => {
-  const { achReference } = req.body as { achReference?: string };
+  const idParsed = UUIDSchema.safeParse(req.params['id']);
+  if (!idParsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid ID format' });
+    return;
+  }
+
+  const achParsed = AchReferenceSchema.safeParse(req.body?.achReference);
+  if (!achParsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid ACH reference format' });
+    return;
+  }
 
   const { data, error } = await supabase
     .from('withdrawals')
     .update({
       status: 'completed',
-      ach_reference: achReference ?? null,
+      ach_reference: achParsed.data ?? null,
     })
-    .eq('id', req.params['id'])
-    .eq('status', 'notified') // can only confirm a notified withdrawal
+    .eq('id', idParsed.data)
+    .eq('status', 'notified')
     .select()
     .single();
 

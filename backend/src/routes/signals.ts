@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { AgentParamSchema, LimitSchema } from '../lib/schemas.js';
+import { AgentParamSchema, LimitSchema, UUIDSchema } from '../lib/schemas.js';
 
 export const signalsRouter = Router();
 
@@ -38,10 +38,16 @@ signalsRouter.get('/', asyncHandler(async (req, res) => {
 
 // GET /api/signals/:id — fetch single signal
 signalsRouter.get('/:id', asyncHandler(async (req, res) => {
+  const parsed = UUIDSchema.safeParse(req.params['id']);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid ID format' });
+    return;
+  }
+
   const { data, error } = await supabase
     .from('signals')
     .select('*')
-    .eq('id', req.params['id'])
+    .eq('id', parsed.data)
     .single();
 
   if (error) throw new Error(error.message);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { LimitSchema, TradeStatusSchema } from '../lib/schemas.js';
+import { LimitSchema, TradeStatusSchema, UUIDSchema } from '../lib/schemas.js';
 import { educationQueue } from '../queues/index.js';
 
 export const tradesRouter = Router();
@@ -39,10 +39,16 @@ tradesRouter.get('/', asyncHandler(async (req, res) => {
 
 // GET /api/trades/:id
 tradesRouter.get('/:id', asyncHandler(async (req, res) => {
+  const idParsed = UUIDSchema.safeParse(req.params['id']);
+  if (!idParsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid ID format' });
+    return;
+  }
+
   const { data, error } = await supabase
     .from('trades')
     .select('*, signals(agent, confidence, rationale)')
-    .eq('id', req.params['id'])
+    .eq('id', idParsed.data)
     .single();
 
   if (error) throw new Error(error.message);
@@ -51,6 +57,12 @@ tradesRouter.get('/:id', asyncHandler(async (req, res) => {
 
 // PATCH /api/trades/:id/status — update trade status (e.g. filled confirmation)
 tradesRouter.patch('/:id/status', asyncHandler(async (req, res) => {
+  const idParsed = UUIDSchema.safeParse(req.params['id']);
+  if (!idParsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid ID format' });
+    return;
+  }
+
   const parsed = TradeStatusSchema.safeParse(req.body?.status);
   if (!parsed.success) {
     res.status(400).json({ success: false, error: 'Invalid status. Must be: pending, filled, cancelled, or rejected' });
@@ -61,7 +73,7 @@ tradesRouter.patch('/:id/status', asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from('trades')
     .update({ status })
-    .eq('id', req.params['id'])
+    .eq('id', idParsed.data)
     .select()
     .single();
 

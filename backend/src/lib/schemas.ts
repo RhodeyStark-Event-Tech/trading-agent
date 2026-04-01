@@ -58,6 +58,8 @@ export const AgentParamSchema = z.enum(VALID_AGENTS);
 export const TradeStatusSchema = z.enum(VALID_TRADE_STATUSES);
 export const TickerSchema = z.string().min(1).max(5).regex(/^[A-Z]+$/, 'Ticker must be uppercase letters only');
 export const LimitSchema = z.coerce.number().int().min(1).default(50).transform((v) => Math.min(v, 200));
+export const UUIDSchema = z.string().uuid('Invalid ID format');
+export const AchReferenceSchema = z.string().max(100).regex(/^[a-zA-Z0-9\-_]*$/, 'Invalid ACH reference format').optional();
 
 export const RunSentimentInputSchema = z.object({
   headlines: z.array(z.string().min(1).max(500)).min(1).max(50),

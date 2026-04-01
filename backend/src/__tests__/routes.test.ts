@@ -122,14 +122,21 @@ describe('GET /api/signals', () => {
   });
 });
 
+const TEST_UUID = '00000000-0000-0000-0000-000000000001';
+
 describe('GET /api/signals/:id', () => {
   it('returns a single signal', async () => {
-    const signal = { id: 'abc', ticker: 'MSFT', agent: 'meta', action: 'HOLD' };
+    const signal = { id: TEST_UUID, ticker: 'MSFT', agent: 'meta', action: 'HOLD' };
     mockSupabaseChain.single.mockResolvedValueOnce({ data: signal, error: null });
 
-    const res = await request(app).get('/api/signals/abc');
+    const res = await request(app).get(`/api/signals/${TEST_UUID}`);
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual(signal);
+  });
+
+  it('rejects invalid ID format', async () => {
+    const res = await request(app).get('/api/signals/not-a-uuid');
+    expect(res.status).toBe(400);
   });
 });
 
@@ -148,11 +155,11 @@ describe('GET /api/trades', () => {
 
 describe('PATCH /api/trades/:id/status', () => {
   it('updates trade status', async () => {
-    const updated = { id: '1', status: 'filled' };
+    const updated = { id: TEST_UUID, status: 'filled' };
     mockSupabaseChain.single.mockResolvedValueOnce({ data: updated, error: null });
 
     const res = await request(app)
-      .patch('/api/trades/1/status')
+      .patch(`/api/trades/${TEST_UUID}/status`)
       .send({ status: 'filled' });
 
     expect(res.status).toBe(200);
@@ -161,7 +168,7 @@ describe('PATCH /api/trades/:id/status', () => {
 
   it('rejects invalid status', async () => {
     const res = await request(app)
-      .patch('/api/trades/1/status')
+      .patch(`/api/trades/${TEST_UUID}/status`)
       .send({ status: 'invalid_status' });
 
     expect(res.status).toBe(400);
@@ -170,9 +177,9 @@ describe('PATCH /api/trades/:id/status', () => {
 
   it('accepts all valid statuses', async () => {
     for (const status of ['pending', 'filled', 'cancelled', 'rejected']) {
-      mockSupabaseChain.single.mockResolvedValueOnce({ data: { id: '1', status }, error: null });
+      mockSupabaseChain.single.mockResolvedValueOnce({ data: { id: TEST_UUID, status }, error: null });
       const res = await request(app)
-        .patch('/api/trades/1/status')
+        .patch(`/api/trades/${TEST_UUID}/status`)
         .send({ status });
       expect(res.status).toBe(200);
     }
@@ -259,15 +266,22 @@ describe('GET /api/harvest/withdrawals', () => {
 
 describe('POST /api/harvest/confirm/:id', () => {
   it('confirms a withdrawal', async () => {
-    const updated = { id: '1', status: 'completed', ach_reference: 'ACH123' };
+    const updated = { id: TEST_UUID, status: 'completed', ach_reference: 'ACH123' };
     mockSupabaseChain.single.mockResolvedValueOnce({ data: updated, error: null });
 
     const res = await request(app)
-      .post('/api/harvest/confirm/1')
+      .post(`/api/harvest/confirm/${TEST_UUID}`)
       .send({ achReference: 'ACH123' });
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe('completed');
+  });
+
+  it('rejects invalid ID format', async () => {
+    const res = await request(app)
+      .post('/api/harvest/confirm/not-a-uuid')
+      .send({ achReference: 'ACH123' });
+    expect(res.status).toBe(400);
   });
 });
 
