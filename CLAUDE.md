@@ -1,5 +1,19 @@
 # AI Stock Trading Agent — Project Brief
 
+## Package Manager
+- **Always use `npm`** — never use `pnpm`, `yarn`, or any other package manager.
+- This is an npm workspaces monorepo. Use `npm install`, `npm run`, `npm test`, etc.
+- Dev commands: `cd backend && npm run dev` / `cd frontend && npm run dev`
+
+## Third-Party Setup Instructions
+- When introducing or referencing any third-party service, API, tool, or dependency, **always provide detailed step-by-step setup instructions**.
+- Include: where to sign up, how to navigate to the relevant settings, exactly what to click/copy, and where to paste credentials.
+- Call out common gotchas, approval wait times, required account types, and regional restrictions.
+- Never assume the user already has an account or knows how the service works.
+- If a service requires multiple steps across different platforms (e.g., create brokerage account → register as developer → create app), list them in the correct order with dependencies clearly noted.
+
+---
+
 ## Overview
 An automated stock trading system powered by LLM-based signal generation. The system ingests market data, news, and fundamentals, processes them through specialized AI agents, and executes trades via the Schwab API — with a React/TypeScript dashboard for monitoring and control.
 
