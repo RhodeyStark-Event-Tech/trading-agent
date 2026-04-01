@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { AgentParamSchema, RunSentimentInputSchema, RunMetaInputSchema } from '../lib/schemas.js';
+import { AgentParamSchema, RunSentimentInputSchema, RunMetaInputSchema, TickerSchema } from '../lib/schemas.js';
 import { runSentimentAgent } from '../agents/sentimentAgent.js';
 import { runMetaAgent } from '../agents/metaAgent.js';
+import { runTechnicalAgent } from '../agents/technicalAgent.js';
+import { runFundamentalAgent } from '../agents/fundamentalAgent.js';
+import { getQuote, getOHLCV, getIndicators, getFundamentals } from '../services/marketDataService.js';
+import { pipelineQueue } from '../queues/index.js';
 
 export const agentsRouter = Router();
 
@@ -78,6 +82,33 @@ agentsRouter.post('/run/sentiment', asyncHandler(async (req, res) => {
   res.json({ success: true, data: output });
 }));
 
+// POST /api/agents/run/technical — manually trigger technical agent
+agentsRouter.post('/run/technical', asyncHandler(async (req, res) => {
+  const parsed = TickerSchema.safeParse(req.body?.ticker);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Valid ticker required (e.g. AAPL)' });
+    return;
+  }
+  const ticker = parsed.data;
+  const [quote, candles] = await Promise.all([getQuote(ticker), getOHLCV(ticker)]);
+  const indicators = await getIndicators(candles);
+  const output = await runTechnicalAgent({ ticker, candles, indicators, currentPrice: quote.price });
+  res.json({ success: true, data: output });
+}));
+
+// POST /api/agents/run/fundamental — manually trigger fundamental agent
+agentsRouter.post('/run/fundamental', asyncHandler(async (req, res) => {
+  const parsed = TickerSchema.safeParse(req.body?.ticker);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Valid ticker required (e.g. AAPL)' });
+    return;
+  }
+  const ticker = parsed.data;
+  const [quote, fundamentals] = await Promise.all([getQuote(ticker), getFundamentals(ticker)]);
+  const output = await runFundamentalAgent({ ticker, currentPrice: quote.price, metrics: fundamentals });
+  res.json({ success: true, data: output });
+}));
+
 // POST /api/agents/run/meta — manually trigger meta agent
 agentsRouter.post('/run/meta', asyncHandler(async (req, res) => {
   const parsed = RunMetaInputSchema.safeParse(req.body);
@@ -87,4 +118,20 @@ agentsRouter.post('/run/meta', asyncHandler(async (req, res) => {
   }
   const output = await runMetaAgent(parsed.data);
   res.json({ success: true, data: output });
+}));
+
+// POST /api/agents/run/pipeline — run full analysis pipeline for a ticker
+agentsRouter.post('/run/pipeline', asyncHandler(async (req, res) => {
+  const parsed = TickerSchema.safeParse(req.body?.ticker);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Valid ticker required (e.g. AAPL)' });
+    return;
+  }
+
+  if (pipelineQueue) {
+    await pipelineQueue.add(`pipeline-${parsed.data}`, { ticker: parsed.data }, { attempts: 3 });
+    res.json({ success: true, data: { message: `Pipeline queued for ${parsed.data}` } });
+  } else {
+    res.status(503).json({ success: false, error: 'Queue unavailable — Redis not connected' });
+  }
 }));
