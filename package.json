@@ -2,18 +2,17 @@
   "name": "trading-agent",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@9.0.0",
   "workspaces": [
     "frontend",
     "backend",
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm --parallel --filter frontend --filter backend dev",
-    "build": "pnpm --recursive build",
-    "lint": "pnpm --recursive lint",
-    "typecheck": "pnpm --recursive typecheck",
-    "test": "pnpm --recursive test"
+    "dev": "npm run dev --workspace=frontend & npm run dev --workspace=backend",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm run test --workspaces"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

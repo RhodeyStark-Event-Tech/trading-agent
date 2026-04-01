@@ -1,6 +1,7 @@
 -- ─── Extensions ─────────────────────────────────────────────────────────────
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS vector;
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS vector SCHEMA extensions;
 
 -- ─── Signals ─────────────────────────────────────────────────────────────────
 CREATE TABLE signals (

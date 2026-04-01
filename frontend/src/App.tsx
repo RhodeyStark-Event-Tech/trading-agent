@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, List, DollarSign, Settings } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, List, DollarSign, Settings, GraduationCap } from 'lucide-react';
 import PositionsPage from './pages/PositionsPage.js';
 import SignalsPage from './pages/SignalsPage.js';
 import TradesPage from './pages/TradesPage.js';
 import HarvestPage from './pages/HarvestPage.js';
 import AgentsPage from './pages/AgentsPage.js';
+import EducationPage from './pages/EducationPage.js';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 2 } },
@@ -16,6 +17,7 @@ const NAV = [
   { to: '/signals',  label: 'Signals',   icon: TrendingUp },
   { to: '/trades',   label: 'Trades',    icon: List },
   { to: '/harvest',  label: 'Harvest',   icon: DollarSign },
+  { to: '/learn',    label: 'Learn',      icon: GraduationCap },
   { to: '/agents',   label: 'Agents',    icon: Settings },
 ];
 
@@ -58,6 +60,7 @@ export default function App() {
               <Route path="/signals" element={<SignalsPage />} />
               <Route path="/trades"  element={<TradesPage />} />
               <Route path="/harvest" element={<HarvestPage />} />
+              <Route path="/learn"   element={<EducationPage />} />
               <Route path="/agents"  element={<AgentsPage />} />
             </Routes>
           </main>

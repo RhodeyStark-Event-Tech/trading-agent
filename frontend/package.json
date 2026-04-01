@@ -14,7 +14,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
     "@tanstack/react-query": "^5.35.0",
-    "@trading-agent/types": "workspace:*",
+    "@trading-agent/types": "*",
     "lightweight-charts": "^4.1.0",
     "lucide-react": "^0.383.0",
     "react": "^18.3.0",

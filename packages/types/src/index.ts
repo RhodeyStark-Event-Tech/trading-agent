@@ -95,6 +95,26 @@ export type Withdrawal = {
   createdAt: string;
 };
 
+// ─── Education Types ─────────────────────────────────────────────────────────
+
+export type EducationDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+export type EducationCard = {
+  id: string;
+  tradeId: string;
+  ticker: string;
+  action: 'BUY' | 'SELL';
+  companyName: string;
+  companyOverview: string;
+  tradeRationale: string;
+  conceptTitle: string;
+  conceptExplanation: string;
+  riskNote: string;
+  difficulty: EducationDifficulty;
+  tags: string[];
+  createdAt: string;
+};
+
 // ─── Market Data Types ────────────────────────────────────────────────────────
 
 export type OHLCV = {

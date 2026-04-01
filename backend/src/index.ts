@@ -9,6 +9,7 @@ import { tradesRouter } from './routes/trades.js';
 import { positionsRouter } from './routes/positions.js';
 import { harvestRouter } from './routes/harvest.js';
 import { agentsRouter } from './routes/agents.js';
+import { educationRouter } from './routes/education.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initQueues } from './queues/index.js';
 
@@ -38,6 +39,7 @@ app.use('/api/trades', tradesRouter);
 app.use('/api/positions', positionsRouter);
 app.use('/api/harvest', harvestRouter);
 app.use('/api/agents', agentsRouter);
+app.use('/api/education', educationRouter);
 
 // ─── Error Handler ────────────────────────────────────────────────────────────
 app.use(errorHandler);

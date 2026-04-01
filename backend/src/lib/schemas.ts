@@ -30,6 +30,17 @@ export const MetaAgentOutputSchema = z.object({
   rationale: z.string().min(10),
 });
 
+export const EducationCardOutputSchema = z.object({
+  companyName: z.string().min(1),
+  companyOverview: z.string().min(20),
+  tradeRationale: z.string().min(20),
+  conceptTitle: z.string().min(3),
+  conceptExplanation: z.string().min(50),
+  riskNote: z.string().min(20),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
+  tags: z.array(z.string()).min(1).max(5),
+});
+
 export const HarvestConfigSchema = z.object({
   fixedAmount: z.number().positive(),
   pctReturn: z.number().min(0).max(1),

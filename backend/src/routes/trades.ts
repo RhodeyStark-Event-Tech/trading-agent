@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { educationQueue } from '../queues/index.js';
 
 export const tradesRouter = Router();
 
@@ -54,5 +55,39 @@ tradesRouter.patch('/:id/status', asyncHandler(async (req, res) => {
     .single();
 
   if (error) throw new Error(error.message);
+
+  // Trigger education card generation when a trade is filled
+  if (status === 'filled' && data) {
+    const trade = data as { id: string; ticker: string; action: string; quantity: number; price: number; signal_id: string | null };
+    let agentName = 'meta';
+    let confidence = 0;
+    let rationale: Record<string, unknown> = {};
+
+    if (trade.signal_id) {
+      const { data: signal } = await supabase
+        .from('signals')
+        .select('agent, confidence, rationale')
+        .eq('id', trade.signal_id)
+        .single();
+
+      if (signal) {
+        agentName = (signal as { agent: string }).agent;
+        confidence = (signal as { confidence: number }).confidence;
+        rationale = (signal as { rationale: Record<string, unknown> }).rationale;
+      }
+    }
+
+    await educationQueue.add('generate-education', {
+      tradeId: trade.id,
+      ticker: trade.ticker,
+      action: trade.action,
+      quantity: trade.quantity,
+      price: trade.price,
+      agentName,
+      confidence,
+      rationale,
+    }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 } });
+  }
+
   res.json({ success: true, data });
 }));
