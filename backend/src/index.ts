@@ -13,6 +13,17 @@ import { educationRouter } from './routes/education.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { initQueues } from './queues/index.js';
 
+// Prevent Redis/BullMQ connection errors from crashing the process
+process.on('uncaughtException', (err) => {
+  const redisErrors = ['ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'ENOTSOCK', 'Connection is closed'];
+  if (redisErrors.some((e) => err.message?.includes(e))) {
+    logger.warn({ err: err.message }, 'Redis connection error — queues unavailable');
+    return;
+  }
+  logger.error({ err }, 'Uncaught exception');
+  process.exit(1);
+});
+
 const app = express();
 const PORT = process.env['PORT'] ?? 3001;
 
@@ -22,11 +33,26 @@ app.use(cors({ origin: process.env['FRONTEND_URL'] ?? 'http://localhost:5173' })
 app.use(express.json());
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
+// General API limit
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
   message: { success: false, error: 'Too many requests' },
 }));
+
+// Strict limit for LLM endpoints (expensive operations)
+const llmRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5,
+  message: { success: false, error: 'Too many LLM requests — try again in a minute' },
+});
+
+// Strict limit for write operations
+const writeRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20,
+  message: { success: false, error: 'Too many write requests' },
+});
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
@@ -37,8 +63,9 @@ app.get('/health', (_req, res) => {
 app.use('/api/signals', signalsRouter);
 app.use('/api/trades', tradesRouter);
 app.use('/api/positions', positionsRouter);
-app.use('/api/harvest', harvestRouter);
-app.use('/api/agents', agentsRouter);
+app.use('/api/harvest', writeRateLimit, harvestRouter);
+app.use('/api/agents/run', llmRateLimit);  // LLM agent triggers only
+app.use('/api/agents', writeRateLimit, agentsRouter);
 app.use('/api/education', educationRouter);
 
 // ─── Error Handler ────────────────────────────────────────────────────────────
@@ -47,7 +74,11 @@ app.use(errorHandler);
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, async () => {
   logger.info({ port: PORT, mode: process.env['TRADING_MODE'] ?? 'paper' }, 'Backend started');
-  await initQueues();
+  try {
+    await initQueues();
+  } catch {
+    logger.warn('Queue initialization failed — running without background workers');
+  }
 });
 
 export default app;

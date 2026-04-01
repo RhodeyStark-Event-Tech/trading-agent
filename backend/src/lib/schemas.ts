@@ -49,6 +49,28 @@ export const HarvestConfigSchema = z.object({
   enabled: z.boolean(),
 });
 
+// ─── Route Input Validation ──────────────────────────────────────────────────
+
+const VALID_AGENTS = ['sentiment', 'technical', 'fundamental', 'meta'] as const;
+const VALID_TRADE_STATUSES = ['pending', 'filled', 'cancelled', 'rejected'] as const;
+
+export const AgentParamSchema = z.enum(VALID_AGENTS);
+export const TradeStatusSchema = z.enum(VALID_TRADE_STATUSES);
+export const TickerSchema = z.string().min(1).max(5).regex(/^[A-Z]+$/, 'Ticker must be uppercase letters only');
+export const LimitSchema = z.coerce.number().int().min(1).default(50).transform((v) => Math.min(v, 200));
+
+export const RunSentimentInputSchema = z.object({
+  headlines: z.array(z.string().min(1).max(500)).min(1).max(50),
+  tickers: z.array(TickerSchema).min(1).max(10),
+});
+
+export const RunMetaInputSchema = z.object({
+  ticker: TickerSchema,
+  sentiment: SentimentAgentOutputSchema.optional(),
+  technical: TechnicalAgentOutputSchema.optional(),
+  fundamental: FundamentalAgentOutputSchema.optional(),
+});
+
 // Helper: parse and validate LLM JSON output safely
 export const parseLLMOutput = <T>(schema: z.ZodSchema<T>, raw: string): T => {
   const cleaned = raw.replace(/```json|```/g, '').trim();

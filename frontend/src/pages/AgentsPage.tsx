@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api.js';
+import toast from 'react-hot-toast';
 import type { AgentState } from '@trading-agent/types';
 
 const statusColor: Record<string, string> = {
@@ -26,12 +27,20 @@ export default function AgentsPage() {
 
   const pause = useMutation({
     mutationFn: (agent: string) => api.post(`/api/agents/${agent}/pause`, {}),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agent-state'] }),
+    onSuccess: (_data, agent) => {
+      queryClient.invalidateQueries({ queryKey: ['agent-state'] });
+      toast.success(`${agent} agent paused`);
+    },
+    onError: (_err, agent) => toast.error(`Failed to pause ${agent} agent`),
   });
 
   const resume = useMutation({
     mutationFn: (agent: string) => api.post(`/api/agents/${agent}/resume`, {}),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agent-state'] }),
+    onSuccess: (_data, agent) => {
+      queryClient.invalidateQueries({ queryKey: ['agent-state'] });
+      toast.success(`${agent} agent resumed`);
+    },
+    onError: (_err, agent) => toast.error(`Failed to resume ${agent} agent`),
   });
 
   return (

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEducation } from '../hooks/useEducation.js';
 import { BookOpen, AlertTriangle, Lightbulb, Building2, ChevronDown, ChevronUp } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { EducationCard } from '@trading-agent/types';
 
 const actionColor = (action: string) =>
@@ -29,6 +30,7 @@ function EducationCardItem({ card }: { card: EducationCard }) {
     <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
       {/* Header */}
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between p-4 hover:bg-gray-800/50 transition-colors"
       >
@@ -107,6 +109,10 @@ function EducationCardItem({ card }: { card: EducationCard }) {
 export default function EducationPage() {
   const { data: cards, isLoading, error } = useEducation(100);
 
+  useEffect(() => {
+    if (error) toast.error(`Failed to load education cards: ${(error as Error).message}`);
+  }, [error]);
+
   return (
     <div>
       <div className="mb-6">
@@ -117,7 +123,6 @@ export default function EducationPage() {
       </div>
 
       {isLoading && <p className="text-gray-500">Loading education cards...</p>}
-      {error && <p className="text-red-400">Error: {(error as Error).message}</p>}
 
       {cards && cards.length === 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">

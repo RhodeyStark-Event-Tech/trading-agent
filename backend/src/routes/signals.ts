@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { AgentParamSchema, LimitSchema } from '../lib/schemas.js';
 
 export const signalsRouter = Router();
 
 // GET /api/signals — fetch recent signals
 signalsRouter.get('/', asyncHandler(async (req, res) => {
-  const limit = Math.min(Number(req.query['limit'] ?? 50), 200);
+  const limit = LimitSchema.parse(req.query['limit'] ?? 50);
   const agent = req.query['agent'] as string | undefined;
   const ticker = req.query['ticker'] as string | undefined;
 
@@ -16,8 +17,18 @@ signalsRouter.get('/', asyncHandler(async (req, res) => {
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (agent) query = query.eq('agent', agent);
-  if (ticker) query = query.eq('ticker', ticker);
+  if (agent) {
+    const parsed = AgentParamSchema.safeParse(agent);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: 'Invalid agent filter' });
+      return;
+    }
+    query = query.eq('agent', parsed.data);
+  }
+  if (ticker) {
+    const clean = ticker.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5);
+    if (clean) query = query.eq('ticker', clean);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);

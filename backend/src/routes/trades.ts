@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { LimitSchema, TradeStatusSchema } from '../lib/schemas.js';
 import { educationQueue } from '../queues/index.js';
 
 export const tradesRouter = Router();
 
 // GET /api/trades — fetch trade history
 tradesRouter.get('/', asyncHandler(async (req, res) => {
-  const limit = Math.min(Number(req.query['limit'] ?? 50), 200);
+  const limit = LimitSchema.parse(req.query['limit'] ?? 50);
   const ticker = req.query['ticker'] as string | undefined;
   const status = req.query['status'] as string | undefined;
 
@@ -17,8 +18,18 @@ tradesRouter.get('/', asyncHandler(async (req, res) => {
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (ticker) query = query.eq('ticker', ticker);
-  if (status) query = query.eq('status', status);
+  if (ticker) {
+    const clean = ticker.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5);
+    if (clean) query = query.eq('ticker', clean);
+  }
+  if (status) {
+    const parsed = TradeStatusSchema.safeParse(status);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: 'Invalid status filter' });
+      return;
+    }
+    query = query.eq('status', parsed.data);
+  }
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -40,12 +51,12 @@ tradesRouter.get('/:id', asyncHandler(async (req, res) => {
 
 // PATCH /api/trades/:id/status — update trade status (e.g. filled confirmation)
 tradesRouter.patch('/:id/status', asyncHandler(async (req, res) => {
-  const { status } = req.body as { status: string };
-  const allowed = ['pending', 'filled', 'cancelled', 'rejected'];
-  if (!allowed.includes(status)) {
-    res.status(400).json({ success: false, error: 'Invalid status' });
+  const parsed = TradeStatusSchema.safeParse(req.body?.status);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid status. Must be: pending, filled, cancelled, or rejected' });
     return;
   }
+  const status = parsed.data;
 
   const { data, error } = await supabase
     .from('trades')
@@ -77,7 +88,7 @@ tradesRouter.patch('/:id/status', asyncHandler(async (req, res) => {
       }
     }
 
-    await educationQueue.add('generate-education', {
+    await educationQueue?.add('generate-education', {
       tradeId: trade.id,
       ticker: trade.ticker,
       action: trade.action,

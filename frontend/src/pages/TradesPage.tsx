@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase.js';
+import toast from 'react-hot-toast';
 import type { Trade } from '@trading-agent/types';
 
 const statusColor: Record<string, string> = {
@@ -10,7 +12,7 @@ const statusColor: Record<string, string> = {
 };
 
 export default function TradesPage() {
-  const { data: trades, isLoading, error } = useQuery({
+  const { data: trades, isLoading, error } = useQuery<Trade[]>({
     queryKey: ['trades'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -22,6 +24,10 @@ export default function TradesPage() {
       return data as Trade[];
     },
   });
+
+  useEffect(() => {
+    if (error) toast.error(`Failed to load trades: ${(error as Error).message}`);
+  }, [error]);
 
   const totalRealized = trades
     ?.filter((t) => t.status === 'filled')
@@ -37,7 +43,6 @@ export default function TradesPage() {
       </div>
 
       {isLoading && <p className="text-gray-500 text-sm">Loading trades...</p>}
-      {error && <p className="text-red-400 text-sm">Error: {error.message}</p>}
 
       {trades && trades.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-gray-800">

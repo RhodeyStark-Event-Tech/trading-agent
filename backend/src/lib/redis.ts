@@ -1,20 +1,26 @@
 import Redis from 'ioredis';
 import { logger } from './logger.js';
 
-if (!process.env['REDIS_URL']) {
-  throw new Error('Missing REDIS_URL');
+const REDIS_URL = process.env['REDIS_URL'];
+
+let redisInstance: Redis | null = null;
+
+if (REDIS_URL) {
+  try {
+    redisInstance = new Redis(REDIS_URL, {
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+      retryStrategy: () => null, // don't retry — fail gracefully
+    });
+    redisInstance.on('connect', () => logger.info('Redis connected'));
+    redisInstance.on('error', () => {}); // swallow errors to prevent crash
+  } catch {
+    logger.warn('Failed to create Redis client — queues disabled');
+    redisInstance = null;
+  }
+} else {
+  logger.warn('No REDIS_URL set — background queues disabled');
 }
 
-export const redis = new Redis(process.env['REDIS_URL'], {
-  maxRetriesPerRequest: null, // required by BullMQ
-  lazyConnect: true,
-});
+export const redis = redisInstance;
 
-redis.on('connect', () => logger.info('Redis connected'));
-redis.on('error', (err) => logger.error({ err }, 'Redis error'));
-
-export const redisConfig = {
-  host: redis.options.host,
-  port: redis.options.port,
-  password: redis.options.password,
-};

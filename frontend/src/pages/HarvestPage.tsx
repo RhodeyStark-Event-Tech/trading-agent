@@ -5,6 +5,7 @@ import {
   useUpdateHarvestConfig,
   useConfirmWithdrawal,
 } from '../hooks/useHarvest.js';
+import toast from 'react-hot-toast';
 import type { Withdrawal } from '@trading-agent/types';
 
 const statusColor: Record<string, string> = {
@@ -28,11 +29,24 @@ export default function HarvestPage() {
 
   const handleToggle = () => {
     if (!config) return;
-    updateConfig.mutate({ ...config, enabled: !config.enabled });
+    const next = !config.enabled;
+    updateConfig.mutate(
+      { ...config, enabled: next },
+      {
+        onSuccess: () => toast.success(next ? 'Harvest enabled' : 'Harvest disabled'),
+        onError: () => toast.error('Failed to update harvest status'),
+      },
+    );
   };
 
   const handleConfirm = (id: string) => {
-    confirmWithdrawal.mutate({ id, achReference: achRef || undefined });
+    confirmWithdrawal.mutate(
+      { id, achReference: achRef || undefined },
+      {
+        onSuccess: () => toast.success('Withdrawal confirmed'),
+        onError: () => toast.error('Failed to confirm withdrawal'),
+      },
+    );
     setConfirmingId(null);
     setAchRef('');
   };

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { AgentParamSchema, RunSentimentInputSchema, RunMetaInputSchema } from '../lib/schemas.js';
 import { runSentimentAgent } from '../agents/sentimentAgent.js';
 import { runMetaAgent } from '../agents/metaAgent.js';
 
@@ -18,11 +19,16 @@ agentsRouter.get('/status', asyncHandler(async (_req, res) => {
 
 // POST /api/agents/:agent/pause
 agentsRouter.post('/:agent/pause', asyncHandler(async (req, res) => {
-  const agent = req.params['agent'];
+  const parsed = AgentParamSchema.safeParse(req.params['agent']);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid agent. Must be: sentiment, technical, fundamental, or meta' });
+    return;
+  }
+
   const { data, error } = await supabase
     .from('agent_state')
     .update({ status: 'paused' })
-    .eq('agent', agent)
+    .eq('agent', parsed.data)
     .select()
     .single();
 
@@ -32,11 +38,16 @@ agentsRouter.post('/:agent/pause', asyncHandler(async (req, res) => {
 
 // POST /api/agents/:agent/resume
 agentsRouter.post('/:agent/resume', asyncHandler(async (req, res) => {
-  const agent = req.params['agent'];
+  const parsed = AgentParamSchema.safeParse(req.params['agent']);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid agent. Must be: sentiment, technical, fundamental, or meta' });
+    return;
+  }
+
   const { data, error } = await supabase
     .from('agent_state')
     .update({ status: 'running' })
-    .eq('agent', agent)
+    .eq('agent', parsed.data)
     .select()
     .single();
 
@@ -58,17 +69,22 @@ agentsRouter.get('/prompts', asyncHandler(async (_req, res) => {
 
 // POST /api/agents/run/sentiment — manually trigger sentiment agent
 agentsRouter.post('/run/sentiment', asyncHandler(async (req, res) => {
-  const { headlines, tickers } = req.body as { headlines: string[]; tickers: string[] };
-  if (!headlines?.length || !tickers?.length) {
-    res.status(400).json({ success: false, error: 'headlines and tickers required' });
+  const parsed = RunSentimentInputSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.message });
     return;
   }
-  const output = await runSentimentAgent(headlines, tickers);
+  const output = await runSentimentAgent(parsed.data.headlines, parsed.data.tickers);
   res.json({ success: true, data: output });
 }));
 
 // POST /api/agents/run/meta — manually trigger meta agent
 agentsRouter.post('/run/meta', asyncHandler(async (req, res) => {
-  const output = await runMetaAgent(req.body as Parameters<typeof runMetaAgent>[0]);
+  const parsed = RunMetaInputSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.message });
+    return;
+  }
+  const output = await runMetaAgent(parsed.data);
   res.json({ success: true, data: output });
 }));

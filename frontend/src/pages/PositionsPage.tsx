@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { usePositions } from '../hooks/usePositions.js';
+import toast from 'react-hot-toast';
 import type { Position } from '@trading-agent/types';
 
 const pnlColor = (val: number) =>
@@ -9,6 +11,10 @@ const fmt = (val: number) =>
 
 export default function PositionsPage() {
   const { data: positions, isLoading, error } = usePositions();
+
+  useEffect(() => {
+    if (error) toast.error(`Failed to load positions: ${error.message}`);
+  }, [error]);
 
   const totalPnL = positions?.reduce((acc, p) => acc + p.unrealizedPnl, 0) ?? 0;
   const totalCost = positions?.reduce((acc, p) => acc + p.quantity * p.avgCost, 0) ?? 0;
@@ -30,7 +36,6 @@ export default function PositionsPage() {
 
       {/* Table */}
       {isLoading && <p className="text-gray-500 text-sm">Loading positions...</p>}
-      {error && <p className="text-red-400 text-sm">Error: {error.message}</p>}
       {!isLoading && positions?.length === 0 && (
         <p className="text-gray-500 text-sm">No open positions.</p>
       )}

@@ -11,10 +11,12 @@ harvestRouter.get('/config', asyncHandler(async (_req, res) => {
   const { data, error } = await supabase
     .from('harvest_config')
     .select('*')
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(1);
 
   if (error) throw new Error(error.message);
-  res.json({ success: true, data });
+  if (!data || data.length === 0) throw new Error('Harvest config not found');
+  res.json({ success: true, data: data[0] });
 }));
 
 // PUT /api/harvest/config — update harvest settings
@@ -27,7 +29,14 @@ harvestRouter.put('/config', asyncHandler(async (req, res) => {
 
   const { data, error } = await supabase
     .from('harvest_config')
-    .upsert({ ...parsed.data, updated_at: new Date().toISOString() })
+    .upsert({
+      fixed_amount: parsed.data.fixedAmount,
+      pct_return: parsed.data.pctReturn,
+      reserve_pct: parsed.data.reservePct,
+      cooldown_days: parsed.data.cooldownDays,
+      enabled: parsed.data.enabled,
+      updated_at: new Date().toISOString(),
+    })
     .select()
     .single();
 

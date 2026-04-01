@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSignals } from '../hooks/useSignals.js';
+import toast from 'react-hot-toast';
 import type { Signal } from '@trading-agent/types';
 
 const actionColor: Record<string, string> = {
@@ -17,6 +18,11 @@ const agentColor: Record<string, string> = {
 
 export default function SignalsPage() {
   const { data: signals, isLoading, error } = useSignals(100);
+
+  useEffect(() => {
+    if (error) toast.error(`Failed to load signals: ${error.message}`);
+  }, [error]);
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [agentFilter, setAgentFilter] = useState<string>('all');
 
@@ -46,7 +52,6 @@ export default function SignalsPage() {
       </div>
 
       {isLoading && <p className="text-gray-500 text-sm">Loading signals...</p>}
-      {error && <p className="text-red-400 text-sm">Error: {error.message}</p>}
 
       <div className="space-y-2">
         {filtered?.map((signal: Signal) => (
