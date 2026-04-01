@@ -41,7 +41,10 @@ export default function App() {
           {/* Sidebar */}
           <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col py-6 px-3 gap-1">
             <div className="px-3 mb-6">
-              <h1 className="text-lg font-bold text-white">Trading Agent</h1>
+              <div className="flex items-center gap-2">
+                <img src="/favicon.png" alt="Trading Agent" className="w-7 h-7 rounded" />
+                <h1 className="text-lg font-bold text-white">Trading Agent</h1>
+              </div>
               <p className="text-xs text-gray-500 mt-0.5">
                 {import.meta.env['VITE_TRADING_MODE'] === 'live' ? '🟢 Live' : '🟡 Paper'}
               </p>
