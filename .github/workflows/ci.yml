@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-typecheck-test:
+    name: Lint · Typecheck · Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared types
+        run: pnpm --filter @trading-agent/types build
+
+      - name: Typecheck backend
+        run: pnpm --filter @trading-agent/backend typecheck
+
+      - name: Typecheck frontend
+        run: pnpm --filter @trading-agent/frontend typecheck
+
+      - name: Test backend
+        run: pnpm --filter @trading-agent/backend test
+
+      - name: Test frontend
+        run: pnpm --filter @trading-agent/frontend test
+
+  python-lint-test:
+    name: Python Lint · Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        working-directory: python-ms
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: python-ms
+        run: python -m pytest tests/ -v
