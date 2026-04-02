@@ -16,14 +16,12 @@ export default function SettingsPage() {
   // Populate form when config loads
   useEffect(() => {
     if (!config) return;
-    const c = config as Record<string, unknown>;
-    setFixedAmount(String(c['fixed_amount'] ?? c['fixedAmount'] ?? ''));
-    // Display percentage as whole number (0.05 → 5)
-    const pct = Number(c['pct_return'] ?? c['pctReturn'] ?? 0);
+    setFixedAmount(String(config.fixedAmount ?? ''));
+    const pct = config.pctReturn ?? 0;
     setPctReturn(String(pct <= 1 ? pct * 100 : pct));
-    setReservePct(String(c['reserve_pct'] ?? c['reservePct'] ?? ''));
-    setCooldownDays(String(c['cooldown_days'] ?? c['cooldownDays'] ?? ''));
-    setEnabled(Boolean(c['enabled']));
+    setReservePct(String(config.reservePct ?? ''));
+    setCooldownDays(String(config.cooldownDays ?? ''));
+    setEnabled(Boolean(config.enabled));
   }, [config]);
 
   const validate = () => {
@@ -88,6 +86,8 @@ export default function SettingsPage() {
               <p className="text-xs text-gray-500">Master switch for automatic profit harvesting</p>
             </div>
             <button
+              type="button"
+              aria-label="Toggle harvest enabled"
               onClick={() => setEnabled(!enabled)}
               className={`relative w-11 h-6 rounded-full transition-colors ${
                 enabled ? 'bg-green-500' : 'bg-gray-700'
@@ -105,7 +105,7 @@ export default function SettingsPage() {
 
           {/* Fixed Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="fixedAmount" className="block text-sm font-medium text-gray-300 mb-1">
               Fixed Amount Threshold
             </label>
             <p className="text-xs text-gray-500 mb-2">
@@ -114,11 +114,13 @@ export default function SettingsPage() {
             <div className="relative">
               <span className="absolute left-3 top-2 text-gray-500">$</span>
               <input
+                id="fixedAmount"
                 type="number"
                 value={fixedAmount}
                 onChange={(e) => setFixedAmount(e.target.value)}
                 min="1"
                 step="1"
+                aria-label="Fixed amount threshold"
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pl-7 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
@@ -126,7 +128,7 @@ export default function SettingsPage() {
 
           {/* Percentage Return */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="pctReturn" className="block text-sm font-medium text-gray-300 mb-1">
               Percentage Return Threshold
             </label>
             <p className="text-xs text-gray-500 mb-2">
@@ -134,12 +136,14 @@ export default function SettingsPage() {
             </p>
             <div className="relative">
               <input
+                id="pctReturn"
                 type="number"
                 value={pctReturn}
                 onChange={(e) => setPctReturn(e.target.value)}
                 min="0.1"
                 max="100"
                 step="0.1"
+                aria-label="Percentage return threshold"
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
               />
               <span className="absolute right-3 top-2 text-gray-500">%</span>
@@ -148,7 +152,7 @@ export default function SettingsPage() {
 
           {/* Reserve Percentage */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="reservePct" className="block text-sm font-medium text-gray-300 mb-1">
               Minimum Reserve
             </label>
             <p className="text-xs text-gray-500 mb-2">
@@ -156,12 +160,14 @@ export default function SettingsPage() {
             </p>
             <div className="relative">
               <input
+                id="reservePct"
                 type="number"
                 value={reservePct}
                 onChange={(e) => setReservePct(e.target.value)}
                 min="0"
                 max="100"
                 step="1"
+                aria-label="Minimum reserve percentage"
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pr-7 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
               />
               <span className="absolute right-3 top-2 text-gray-500">%</span>
@@ -170,7 +176,7 @@ export default function SettingsPage() {
 
           {/* Cooldown Days */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="cooldownDays" className="block text-sm font-medium text-gray-300 mb-1">
               Cooldown Period
             </label>
             <p className="text-xs text-gray-500 mb-2">
@@ -178,11 +184,13 @@ export default function SettingsPage() {
             </p>
             <div className="relative">
               <input
+                id="cooldownDays"
                 type="number"
                 value={cooldownDays}
                 onChange={(e) => setCooldownDays(e.target.value)}
                 min="1"
                 step="1"
+                aria-label="Cooldown period in days"
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pr-12 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
               />
               <span className="absolute right-3 top-2 text-gray-500">days</span>
@@ -205,6 +213,7 @@ export default function SettingsPage() {
         {/* Save Button */}
         <div className="mt-6">
           <button
+            type="button"
             onClick={handleSave}
             disabled={errors.length > 0 || updateConfig.isPending}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${

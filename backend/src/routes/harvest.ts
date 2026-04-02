@@ -16,7 +16,20 @@ harvestRouter.get('/config', asyncHandler(async (_req, res) => {
 
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error('Harvest config not found');
-  res.json({ success: true, data: data[0] });
+
+  const raw = data[0] as Record<string, unknown>;
+  res.json({
+    success: true,
+    data: {
+      id: raw['id'],
+      fixedAmount: raw['fixed_amount'],
+      pctReturn: raw['pct_return'],
+      reservePct: raw['reserve_pct'],
+      cooldownDays: raw['cooldown_days'],
+      enabled: raw['enabled'],
+      updatedAt: raw['updated_at'],
+    },
+  });
 }));
 
 // PUT /api/harvest/config — update harvest settings
@@ -46,18 +59,27 @@ harvestRouter.put('/config', asyncHandler(async (req, res) => {
 
 // GET /api/harvest/status — current P&L vs threshold
 harvestRouter.get('/status', asyncHandler(async (_req, res) => {
-  const [{ data: config }, realizedPnL] = await Promise.all([
-    supabase.from('harvest_config').select('*').single(),
+  const [{ data: configRows }, realizedPnL] = await Promise.all([
+    supabase.from('harvest_config').select('*').order('updated_at', { ascending: false }).limit(1),
     getRealizedPnLSinceLastHarvest(),
   ]);
+
+  const raw = configRows?.[0] as Record<string, unknown> | undefined;
+  const config = raw ? {
+    fixedAmount: raw['fixed_amount'] as number,
+    pctReturn: raw['pct_return'] as number,
+    reservePct: raw['reserve_pct'] as number,
+    cooldownDays: raw['cooldown_days'] as number,
+    enabled: raw['enabled'] as boolean,
+  } : null;
 
   res.json({
     success: true,
     data: {
       realizedPnL,
       config,
-      fixedProgress: config ? realizedPnL / (config as { fixed_amount: number }).fixed_amount : null,
-      pctProgress: config ? realizedPnL / (config as { pct_return: number }).pct_return : null,
+      fixedProgress: config ? realizedPnL / config.fixedAmount : null,
+      pctProgress: config ? realizedPnL / config.pctReturn : null,
     },
   });
 }));

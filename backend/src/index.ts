@@ -11,6 +11,7 @@ import { harvestRouter } from './routes/harvest.js';
 import { agentsRouter } from './routes/agents.js';
 import { educationRouter } from './routes/education.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { requireAuth } from './middleware/auth.js';
 import { initQueues } from './queues/index.js';
 
 // Prevent Redis/BullMQ connection errors from crashing the process
@@ -59,14 +60,14 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), mode: process.env['TRADING_MODE'] ?? 'paper' });
 });
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/signals', signalsRouter);
-app.use('/api/trades', tradesRouter);
-app.use('/api/positions', positionsRouter);
-app.use('/api/harvest', writeRateLimit, harvestRouter);
-app.use('/api/agents/run', llmRateLimit);  // LLM agent triggers only
-app.use('/api/agents', writeRateLimit, agentsRouter);
-app.use('/api/education', educationRouter);
+// ─── Routes (all protected by auth) ──────────────────────────────────────────
+app.use('/api/signals', requireAuth, signalsRouter);
+app.use('/api/trades', requireAuth, tradesRouter);
+app.use('/api/positions', requireAuth, positionsRouter);
+app.use('/api/harvest', requireAuth, writeRateLimit, harvestRouter);
+app.use('/api/agents/run', requireAuth, llmRateLimit);
+app.use('/api/agents', requireAuth, writeRateLimit, agentsRouter);
+app.use('/api/education', requireAuth, educationRouter);
 
 // ─── Error Handler ────────────────────────────────────────────────────────────
 app.use(errorHandler);

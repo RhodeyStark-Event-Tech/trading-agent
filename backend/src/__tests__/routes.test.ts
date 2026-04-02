@@ -42,7 +42,14 @@ vi.mock('../queues/index.js', () => ({
   sentimentQueue: { add: vi.fn() },
   metaQueue: { add: vi.fn() },
   harvestQueue: { add: vi.fn() },
+  pipelineQueue: { add: vi.fn() },
   initQueues: vi.fn(),
+}));
+vi.mock('../services/marketDataService.js', () => ({
+  getQuote: vi.fn().mockResolvedValue({ ticker: 'AAPL', price: 185, bid: 184.95, ask: 185.05, volume: 1000000, timestamp: new Date().toISOString() }),
+  getOHLCV: vi.fn().mockResolvedValue([]),
+  getIndicators: vi.fn().mockResolvedValue({ rsi: 50, macd: 0, macdSignal: 0, bbUpper: 190, bbMiddle: 185, bbLower: 180, vwap: 185, ema9: 185, ema21: 184, atr: 2.5 }),
+  getFundamentals: vi.fn().mockResolvedValue({ peRatio: 25, forwardPE: 22, eps: 7, revenueGrowth: 0.1, profitMargin: 0.25, marketCap: 3e12, dividendYield: 0.005, debtToEquity: 1.5, sector: 'Technology', industry: 'Consumer Electronics' }),
 }));
 
 // Import routers after mocks
